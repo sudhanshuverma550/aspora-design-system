@@ -12,7 +12,12 @@
     "type": "git",
     "url": "git+https://github.com/sudhanshuverma550/aspora-design-system.git"
   },
-  "keywords": ["design-system", "aspora", "react", "components"],
+  "keywords": [
+    "design-system",
+    "aspora",
+    "react",
+    "components"
+  ],
   "author": "",
   "license": "ISC",
   "bugs": {
@@ -21,6 +26,7 @@
   "homepage": "https://github.com/sudhanshuverma550/aspora-design-system#readme",
   "dependencies": {
     "@astrojs/react": "^4.4.2",
+    "@radix-ui/react-slider": "^1.3.6",
     "@types/react": "^19.2.8",
     "@types/react-dom": "^19.2.3",
     "astro": "^5.16.9",
