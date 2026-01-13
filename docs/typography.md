@@ -6,7 +6,34 @@ The Aspora design system uses **Inter** as the primary typeface. Inter is a vari
 
 ## Font Setup
 
-### Google Fonts
+### Self-Hosted (Recommended)
+
+The design system includes self-hosted Inter font files for production use. This eliminates external dependencies and improves loading performance.
+
+**Import the font CSS:**
+
+```css
+/* In your main CSS file */
+@import url('./fonts/inter/inter.css');
+```
+
+**Or link in HTML:**
+
+```html
+<link rel="stylesheet" href="./fonts/inter/inter.css">
+```
+
+**Included Files:**
+- `inter-latin-400-normal.woff2` - Regular (23KB)
+- `inter-latin-500-normal.woff2` - Medium (24KB)
+- `inter-latin-600-normal.woff2` - Semi Bold (24KB)
+- `inter-latin-700-normal.woff2` - Bold (24KB)
+
+Total size: ~95KB (Latin subset only)
+
+### Google Fonts (Alternative)
+
+If you prefer using Google's CDN:
 
 ```html
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +41,7 @@ The Aspora design system uses **Inter** as the primary typeface. Inter is a vari
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 ```
 
-### CSS Import
+### CSS Import (Alternative)
 
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
