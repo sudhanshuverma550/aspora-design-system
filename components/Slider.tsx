@@ -222,8 +222,9 @@ export const Slider: React.FC<SliderProps> = ({
 
   // Thumb touch start handler
   const handleThumbTouchStart = useCallback((dragType: 'left' | 'right' | 'single') => (e: React.TouchEvent) => {
+    // IMPORTANT: preventDefault stops browser from interpreting as scroll/pan gesture
+    e.preventDefault();
     e.stopPropagation();
-    // Don't preventDefault here - it can cause issues on some browsers
     startDragging(dragType);
   }, [startDragging]);
 
