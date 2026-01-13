@@ -1,0 +1,140 @@
+/**
+ * Aspora Design System - Spacing Tokens
+ * Source: Figma Aspora Component Library
+ * Last Updated: 18th November 2025
+ */
+
+:root {
+  /* ===================================================
+     PADDING / SPACING TOKENS
+     Used for consistent spacing throughout the UI
+     =================================================== */
+
+  /* No Padding - Zero spacing */
+  --spacing-none: 0px;
+
+  /* Closest - Minimal spacing for tight layouts */
+  --spacing-closest: 2px;
+
+  /* XXS - Extra extra small */
+  --spacing-xxs: 4px;
+
+  /* XXS Alternate - Slightly larger than XXS */
+  --spacing-xxs-alt: 6px;
+
+  /* XS - Extra small */
+  --spacing-xs: 8px;
+
+  /* S - Small */
+  --spacing-s: 12px;
+
+  /* M - Medium (base unit) */
+  --spacing-m: 16px;
+
+  /* L - Large */
+  --spacing-l: 20px;
+
+  /* XL - Extra large */
+  --spacing-xl: 24px;
+
+  /* XXL - Extra extra large */
+  --spacing-xxl: 28px;
+
+  /* XXXL - Triple extra large */
+  --spacing-xxxl: 32px;
+
+  /* 4XL - Quadruple extra large */
+  --spacing-4xl: 36px;
+
+  /* 5XL - Quintuple extra large */
+  --spacing-5xl: 40px;
+
+  /* 6XL - Sextuple extra large */
+  --spacing-6xl: 48px;
+
+  /* ===================================================
+     SEMANTIC SPACING ALIASES
+     Use these for consistent semantic meaning
+     =================================================== */
+
+  /* Component internal padding */
+  --padding-button: var(--spacing-xs);
+  --padding-input: var(--spacing-s);
+  --padding-card: var(--spacing-m);
+  --padding-section: var(--spacing-xl);
+  --padding-page: var(--spacing-xxxl);
+
+  /* Gap between elements */
+  --gap-tight: var(--spacing-xxs);
+  --gap-default: var(--spacing-xs);
+  --gap-relaxed: var(--spacing-m);
+  --gap-loose: var(--spacing-xl);
+
+  /* Stack spacing (vertical) */
+  --stack-xxs: var(--spacing-xxs);
+  --stack-xs: var(--spacing-xs);
+  --stack-s: var(--spacing-s);
+  --stack-m: var(--spacing-m);
+  --stack-l: var(--spacing-l);
+  --stack-xl: var(--spacing-xl);
+
+  /* Inline spacing (horizontal) */
+  --inline-xxs: var(--spacing-xxs);
+  --inline-xs: var(--spacing-xs);
+  --inline-s: var(--spacing-s);
+  --inline-m: var(--spacing-m);
+  --inline-l: var(--spacing-l);
+  --inline-xl: var(--spacing-xl);
+}
+
+/* ===================================================
+   UTILITY CLASSES
+   =================================================== */
+
+/* Padding utilities */
+.p-none { padding: var(--spacing-none); }
+.p-closest { padding: var(--spacing-closest); }
+.p-xxs { padding: var(--spacing-xxs); }
+.p-xxs-alt { padding: var(--spacing-xxs-alt); }
+.p-xs { padding: var(--spacing-xs); }
+.p-s { padding: var(--spacing-s); }
+.p-m { padding: var(--spacing-m); }
+.p-l { padding: var(--spacing-l); }
+.p-xl { padding: var(--spacing-xl); }
+.p-xxl { padding: var(--spacing-xxl); }
+.p-xxxl { padding: var(--spacing-xxxl); }
+.p-4xl { padding: var(--spacing-4xl); }
+.p-5xl { padding: var(--spacing-5xl); }
+.p-6xl { padding: var(--spacing-6xl); }
+
+/* Margin utilities */
+.m-none { margin: var(--spacing-none); }
+.m-closest { margin: var(--spacing-closest); }
+.m-xxs { margin: var(--spacing-xxs); }
+.m-xxs-alt { margin: var(--spacing-xxs-alt); }
+.m-xs { margin: var(--spacing-xs); }
+.m-s { margin: var(--spacing-s); }
+.m-m { margin: var(--spacing-m); }
+.m-l { margin: var(--spacing-l); }
+.m-xl { margin: var(--spacing-xl); }
+.m-xxl { margin: var(--spacing-xxl); }
+.m-xxxl { margin: var(--spacing-xxxl); }
+.m-4xl { margin: var(--spacing-4xl); }
+.m-5xl { margin: var(--spacing-5xl); }
+.m-6xl { margin: var(--spacing-6xl); }
+
+/* Gap utilities */
+.gap-none { gap: var(--spacing-none); }
+.gap-closest { gap: var(--spacing-closest); }
+.gap-xxs { gap: var(--spacing-xxs); }
+.gap-xxs-alt { gap: var(--spacing-xxs-alt); }
+.gap-xs { gap: var(--spacing-xs); }
+.gap-s { gap: var(--spacing-s); }
+.gap-m { gap: var(--spacing-m); }
+.gap-l { gap: var(--spacing-l); }
+.gap-xl { gap: var(--spacing-xl); }
+.gap-xxl { gap: var(--spacing-xxl); }
+.gap-xxxl { gap: var(--spacing-xxxl); }
+.gap-4xl { gap: var(--spacing-4xl); }
+.gap-5xl { gap: var(--spacing-5xl); }
+.gap-6xl { gap: var(--spacing-6xl); }
