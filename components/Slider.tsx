@@ -3,7 +3,7 @@
  * A range slider with single or dual thumb variants
  */
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 
 export type SliderType = 'single' | 'range';
 
@@ -46,42 +46,47 @@ export const Slider: React.FC<SliderProps> = ({
   'aria-label': ariaLabel = 'Slider',
 }) => {
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isDragging, setIsDragging] = useState<'left' | 'right' | 'single' | null>(null);
 
-  // Use refs to avoid stale closures in event handlers
+  // Use ref for dragging state to avoid async state update issues
+  const draggingRef = useRef<'left' | 'right' | 'single' | null>(null);
+
+  // Force re-render when dragging changes (for cursor style)
+  const [, forceUpdate] = React.useReducer(x => x + 1, 0);
+
+  // Use refs for all values to avoid stale closures
   const valueRef = useRef(value);
   const rangeValueRef = useRef(rangeValue);
   const onChangeRef = useRef(onChange);
   const onRangeChangeRef = useRef(onRangeChange);
+  const disabledRef = useRef(disabled);
+  const stepRef = useRef(step);
+  const minRef = useRef(min);
+  const maxRef = useRef(max);
 
   // Keep refs in sync with props
-  useEffect(() => {
-    valueRef.current = value;
-  }, [value]);
-
-  useEffect(() => {
-    rangeValueRef.current = rangeValue;
-  }, [rangeValue]);
-
-  useEffect(() => {
-    onChangeRef.current = onChange;
-  }, [onChange]);
-
-  useEffect(() => {
-    onRangeChangeRef.current = onRangeChange;
-  }, [onRangeChange]);
+  useEffect(() => { valueRef.current = value; }, [value]);
+  useEffect(() => { rangeValueRef.current = rangeValue; }, [rangeValue]);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { onRangeChangeRef.current = onRangeChange; }, [onRangeChange]);
+  useEffect(() => { disabledRef.current = disabled; }, [disabled]);
+  useEffect(() => { stepRef.current = step; }, [step]);
+  useEffect(() => { minRef.current = min; }, [min]);
+  useEffect(() => { maxRef.current = max; }, [max]);
 
   // Calculate percentage from value
   const valueToPercent = useCallback((val: number) => {
     return ((val - min) / (max - min)) * 100;
   }, [min, max]);
 
-  // Calculate value from percentage
+  // Calculate value from percentage (uses refs for latest values)
   const percentToValue = useCallback((percent: number) => {
-    const rawValue = (percent / 100) * (max - min) + min;
-    const steppedValue = Math.round(rawValue / step) * step;
-    return Math.min(max, Math.max(min, steppedValue));
-  }, [min, max, step]);
+    const currentMin = minRef.current;
+    const currentMax = maxRef.current;
+    const currentStep = stepRef.current;
+    const rawValue = (percent / 100) * (currentMax - currentMin) + currentMin;
+    const steppedValue = Math.round(rawValue / currentStep) * currentStep;
+    return Math.min(currentMax, Math.max(currentMin, steppedValue));
+  }, []);
 
   // Get position from mouse/touch event
   const getPositionFromEvent = useCallback((e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => {
@@ -103,93 +108,72 @@ export const Slider: React.FC<SliderProps> = ({
     return Math.min(100, Math.max(0, percent));
   }, []);
 
-  // Handle mouse/touch move
+  // Move handler that reads dragging type from ref
   const handleMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (disabled) return;
+    if (disabledRef.current) return;
+    if (!draggingRef.current) return;
 
-    // Prevent scrolling on touch devices
     if (e.cancelable) {
       e.preventDefault();
     }
 
     const percent = getPositionFromEvent(e);
     const newValue = percentToValue(percent);
+    const currentStep = stepRef.current;
 
-    if (type === 'single') {
+    if (draggingRef.current === 'single') {
       onChangeRef.current?.(newValue);
-    } else if (type === 'range') {
+    } else if (draggingRef.current === 'left') {
       const currentRange = rangeValueRef.current;
-      // We need to check which thumb is being dragged from the dragging state
-      // But since this is called from document event, we check via a ref
+      const newLeft = Math.min(newValue, currentRange[1] - currentStep);
+      onRangeChangeRef.current?.([newLeft, currentRange[1]]);
+    } else if (draggingRef.current === 'right') {
+      const currentRange = rangeValueRef.current;
+      const newRight = Math.max(newValue, currentRange[0] + currentStep);
+      onRangeChangeRef.current?.([currentRange[0], newRight]);
     }
-  }, [disabled, type, getPositionFromEvent, percentToValue]);
+  }, [getPositionFromEvent, percentToValue]);
 
-  // Create specific handlers for each drag type to avoid stale closure issues
-  const handleSingleMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (disabled) return;
-    if (e.cancelable) e.preventDefault();
-
-    const percent = getPositionFromEvent(e);
-    const newValue = percentToValue(percent);
-    onChangeRef.current?.(newValue);
-  }, [disabled, getPositionFromEvent, percentToValue]);
-
-  const handleLeftMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (disabled) return;
-    if (e.cancelable) e.preventDefault();
-
-    const percent = getPositionFromEvent(e);
-    const newValue = percentToValue(percent);
-    const currentRange = rangeValueRef.current;
-    const newLeft = Math.min(newValue, currentRange[1] - step);
-    onRangeChangeRef.current?.([newLeft, currentRange[1]]);
-  }, [disabled, getPositionFromEvent, percentToValue, step]);
-
-  const handleRightMove = useCallback((e: MouseEvent | TouchEvent) => {
-    if (disabled) return;
-    if (e.cancelable) e.preventDefault();
-
-    const percent = getPositionFromEvent(e);
-    const newValue = percentToValue(percent);
-    const currentRange = rangeValueRef.current;
-    const newRight = Math.max(newValue, currentRange[0] + step);
-    onRangeChangeRef.current?.([currentRange[0], newRight]);
-  }, [disabled, getPositionFromEvent, percentToValue, step]);
-
-  // Handle mouse/touch end
+  // End handler
   const handleEnd = useCallback(() => {
-    setIsDragging(null);
-  }, []);
+    draggingRef.current = null;
 
-  // Add/remove event listeners based on drag state
-  useEffect(() => {
-    if (!isDragging) return;
+    // Remove listeners
+    document.removeEventListener('mousemove', handleMove);
+    document.removeEventListener('mouseup', handleEnd);
+    document.removeEventListener('touchmove', handleMove);
+    document.removeEventListener('touchend', handleEnd);
+    document.removeEventListener('touchcancel', handleEnd);
 
-    let moveHandler: (e: MouseEvent | TouchEvent) => void;
+    forceUpdate(); // Update cursor style
+  }, [handleMove]);
 
-    if (isDragging === 'single') {
-      moveHandler = handleSingleMove;
-    } else if (isDragging === 'left') {
-      moveHandler = handleLeftMove;
-    } else {
-      moveHandler = handleRightMove;
-    }
+  // Start dragging - attach listeners immediately
+  const startDragging = useCallback((dragType: 'left' | 'right' | 'single') => {
+    if (disabledRef.current) return;
 
-    // Use passive: false to allow preventDefault on touch events
-    document.addEventListener('mousemove', moveHandler);
+    draggingRef.current = dragType;
+
+    // Attach listeners immediately (not waiting for React state update)
+    document.addEventListener('mousemove', handleMove);
     document.addEventListener('mouseup', handleEnd);
-    document.addEventListener('touchmove', moveHandler, { passive: false });
+    document.addEventListener('touchmove', handleMove, { passive: false });
     document.addEventListener('touchend', handleEnd);
     document.addEventListener('touchcancel', handleEnd);
 
+    forceUpdate(); // Update cursor style
+  }, [handleMove, handleEnd]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
-      document.removeEventListener('mousemove', moveHandler);
+      document.removeEventListener('mousemove', handleMove);
       document.removeEventListener('mouseup', handleEnd);
-      document.removeEventListener('touchmove', moveHandler);
+      document.removeEventListener('touchmove', handleMove);
       document.removeEventListener('touchend', handleEnd);
       document.removeEventListener('touchcancel', handleEnd);
     };
-  }, [isDragging, handleSingleMove, handleLeftMove, handleRightMove, handleEnd]);
+  }, [handleMove, handleEnd]);
 
   // Track colors
   const trackBg = disabled
@@ -202,6 +186,10 @@ export const Slider: React.FC<SliderProps> = ({
   // Handle track click/tap to jump to position
   const handleTrackInteraction = useCallback((e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
     if (disabled) return;
+
+    // Don't handle if it originated from thumb
+    if ((e.target as HTMLElement).getAttribute('role') === 'slider') return;
+
     e.preventDefault();
     e.stopPropagation();
 
@@ -225,75 +213,88 @@ export const Slider: React.FC<SliderProps> = ({
     }
   }, [disabled, getPositionFromEvent, percentToValue, type, onChange, onRangeChange, rangeValue, step]);
 
-  // Thumb component
-  const Thumb: React.FC<{
-    position: number;
-    onStart: () => void;
-    label: string;
-  }> = ({ position, onStart, label }) => {
-    const handleMouseDown = (e: React.MouseEvent) => {
+  // Thumb mouse down handler
+  const handleThumbMouseDown = useCallback((dragType: 'left' | 'right' | 'single') => (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    startDragging(dragType);
+  }, [startDragging]);
+
+  // Thumb touch start handler
+  const handleThumbTouchStart = useCallback((dragType: 'left' | 'right' | 'single') => (e: React.TouchEvent) => {
+    e.stopPropagation();
+    // Don't preventDefault here - it can cause issues on some browsers
+    startDragging(dragType);
+  }, [startDragging]);
+
+  // Keyboard handler for accessibility
+  const handleKeyDown = useCallback((dragType: 'left' | 'right' | 'single') => (e: React.KeyboardEvent) => {
+    if (disabled) return;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
       e.preventDefault();
-      e.stopPropagation();
-      if (!disabled) onStart();
-    };
-
-    const handleTouchStart = (e: React.TouchEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      if (!disabled) onStart();
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (disabled) return;
-      const currentValue = percentToValue(position);
-
-      if (e.key === 'ArrowRight' || e.key === 'ArrowUp') {
-        e.preventDefault();
-        const newValue = Math.min(max, currentValue + step);
-        if (type === 'single') onChange?.(newValue);
-      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
-        e.preventDefault();
-        const newValue = Math.max(min, currentValue - step);
-        if (type === 'single') onChange?.(newValue);
+      if (dragType === 'single') {
+        const newValue = Math.min(max, value + step);
+        onChange?.(newValue);
+      } else if (dragType === 'left') {
+        const newLeft = Math.min(rangeValue[0] + step, rangeValue[1] - step);
+        onRangeChange?.([newLeft, rangeValue[1]]);
+      } else {
+        const newRight = Math.min(max, rangeValue[1] + step);
+        onRangeChange?.([rangeValue[0], newRight]);
       }
-    };
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (dragType === 'single') {
+        const newValue = Math.max(min, value - step);
+        onChange?.(newValue);
+      } else if (dragType === 'left') {
+        const newLeft = Math.max(min, rangeValue[0] - step);
+        onRangeChange?.([newLeft, rangeValue[1]]);
+      } else {
+        const newRight = Math.max(rangeValue[0] + step, rangeValue[1] - step);
+        onRangeChange?.([rangeValue[0], newRight]);
+      }
+    }
+  }, [disabled, min, max, step, value, rangeValue, onChange, onRangeChange]);
 
-    return (
-      <div
-        role="slider"
-        aria-label={label}
-        aria-valuenow={percentToValue(position)}
-        aria-valuemin={min}
-        aria-valuemax={max}
-        tabIndex={disabled ? -1 : 0}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onKeyDown={handleKeyDown}
-        style={{
-          position: 'absolute',
-          top: '50%',
-          left: `${position}%`,
-          transform: 'translate(-50%, -50%)',
-          width: 28,
-          height: 28,
-          borderRadius: '50%',
-          backgroundColor: 'white',
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-          cursor: disabled ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
-          zIndex: 2,
-          transition: isDragging ? 'none' : 'left 0.1s ease',
-          outline: 'none',
-          touchAction: 'none', // Prevent browser touch behaviors
-          userSelect: 'none',
-          WebkitUserSelect: 'none',
-        }}
-      />
-    );
-  };
-
+  const isDragging = draggingRef.current !== null;
   const singlePercent = valueToPercent(value);
   const leftPercent = valueToPercent(rangeValue[0]);
   const rightPercent = valueToPercent(rangeValue[1]);
+
+  // Thumb wrapper style (larger touch target)
+  const getThumbWrapperStyle = (position: number): React.CSSProperties => ({
+    position: 'absolute',
+    top: '50%',
+    left: `${position}%`,
+    transform: 'translate(-50%, -50%)',
+    width: 44, // Minimum recommended touch target size
+    height: 44,
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    cursor: disabled ? 'not-allowed' : isDragging ? 'grabbing' : 'grab',
+    zIndex: 2,
+    outline: 'none',
+    touchAction: 'none',
+    userSelect: 'none',
+    WebkitUserSelect: 'none',
+    WebkitTapHighlightColor: 'transparent',
+    // Debug: uncomment to see touch area
+    // backgroundColor: 'rgba(255,0,0,0.2)',
+  });
+
+  // Visual thumb style (smaller visible circle)
+  const thumbVisualStyle: React.CSSProperties = {
+    width: 28,
+    height: 28,
+    borderRadius: '50%',
+    backgroundColor: 'white',
+    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+    pointerEvents: 'none',
+    transition: isDragging ? 'none' : 'transform 0.1s ease',
+  };
 
   return (
     <div
@@ -302,7 +303,7 @@ export const Slider: React.FC<SliderProps> = ({
         width: '100%',
         padding: '12px 0',
         opacity: disabled ? 0.6 : 1,
-        touchAction: 'none', // Prevent scrolling while interacting
+        touchAction: 'none',
         userSelect: 'none',
         WebkitUserSelect: 'none',
       }}
@@ -311,7 +312,7 @@ export const Slider: React.FC<SliderProps> = ({
       <div
         ref={trackRef}
         onClick={handleTrackInteraction}
-        onTouchStart={handleTrackInteraction}
+        onTouchEnd={handleTrackInteraction}
         style={{
           position: 'relative',
           width: '100%',
@@ -355,23 +356,50 @@ export const Slider: React.FC<SliderProps> = ({
 
         {/* Thumb(s) */}
         {type === 'single' ? (
-          <Thumb
-            position={singlePercent}
-            onStart={() => setIsDragging('single')}
-            label={ariaLabel}
-          />
+          <div
+            role="slider"
+            aria-label={ariaLabel}
+            aria-valuenow={value}
+            aria-valuemin={min}
+            aria-valuemax={max}
+            tabIndex={disabled ? -1 : 0}
+            onMouseDown={handleThumbMouseDown('single')}
+            onTouchStart={handleThumbTouchStart('single')}
+            onKeyDown={handleKeyDown('single')}
+            style={getThumbWrapperStyle(singlePercent)}
+          >
+            <div style={thumbVisualStyle} />
+          </div>
         ) : (
           <>
-            <Thumb
-              position={leftPercent}
-              onStart={() => setIsDragging('left')}
-              label={`${ariaLabel} minimum`}
-            />
-            <Thumb
-              position={rightPercent}
-              onStart={() => setIsDragging('right')}
-              label={`${ariaLabel} maximum`}
-            />
+            <div
+              role="slider"
+              aria-label={`${ariaLabel} minimum`}
+              aria-valuenow={rangeValue[0]}
+              aria-valuemin={min}
+              aria-valuemax={rangeValue[1]}
+              tabIndex={disabled ? -1 : 0}
+              onMouseDown={handleThumbMouseDown('left')}
+              onTouchStart={handleThumbTouchStart('left')}
+              onKeyDown={handleKeyDown('left')}
+              style={getThumbWrapperStyle(leftPercent)}
+            >
+              <div style={thumbVisualStyle} />
+            </div>
+            <div
+              role="slider"
+              aria-label={`${ariaLabel} maximum`}
+              aria-valuenow={rangeValue[1]}
+              aria-valuemin={rangeValue[0]}
+              aria-valuemax={max}
+              tabIndex={disabled ? -1 : 0}
+              onMouseDown={handleThumbMouseDown('right')}
+              onTouchStart={handleThumbTouchStart('right')}
+              onKeyDown={handleKeyDown('right')}
+              style={getThumbWrapperStyle(rightPercent)}
+            >
+              <div style={thumbVisualStyle} />
+            </div>
           </>
         )}
       </div>
